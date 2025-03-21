@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <conio.h>
 
 #define MAXAR 7
 #define MAXARNO 5
@@ -19,13 +20,6 @@ typedef struct {
     unsigned arvis[MAXAR];
     int naresvisit;
 } EstructuraCami;
-
-typedef struct {
-	Aresta *arestes;
-	unsigned num_arestes;
-	unsigned num_nodes;
-	int valid;
-} Graf;
 
 unsigned arestesdelnode(unsigned node, unsigned NAR, Aresta larestes[],
 						unsigned llistap[]) {
@@ -85,6 +79,13 @@ int nodeValenciaMaxima(Aresta arestes[], int nombre_nodes, int nombre_arestes) {
 	return index_maxima;
 }
 
+typedef struct {
+	Aresta *arestes;
+	unsigned num_arestes;
+	unsigned num_nodes;
+	int valid;
+} Graf;
+
 Graf crearGrafFitxer(char* nom_fitxer) {
 	FILE *file;
 	if ((file = fopen(nom_fitxer, "r")) == NULL) {
@@ -113,7 +114,6 @@ Graf crearGrafFitxer(char* nom_fitxer) {
 			.n2 = n2,
 			.estat = 0,
 		};
-
 		arestes[i++] = nova_aresta; 
 	}
 	
@@ -125,6 +125,44 @@ Graf crearGrafFitxer(char* nom_fitxer) {
 		.num_arestes = i,	
 		.valid = 1,
 	};
+}
+
+EstructuraCami crearCamiMaximal(unsigned node_inicial, const Aresta* src_arestes,
+							    const int num_arestes) {
+	Aresta *arestes = malloc(sizeof(Aresta) * num_arestes);
+	for (int i = 0; i < num_arestes; i++) {
+		arestes[i] = src_arestes[i];
+	}
+
+	EstructuraCami cami = {
+		.nodes = {0},
+		.arvis = {0},
+		.naresvisit = 0,
+	};
+
+	cami.nodes[0] = node_inicial;
+
+	unsigned *arestes_posibles = malloc(sizeof(unsigned) * num_arestes); 
+	unsigned num_arestes_posibles = arestesdelnode(cami.nodes[0], num_arestes, arestes, arestes_posibles);
+
+	while (num_arestes_posibles > 0) {
+		unsigned seguent_aresta = arestes_posibles[0];
+		unsigned seguent_node;
+		if (arestes[seguent_aresta].n1 == cami.nodes[cami.naresvisit]) {
+			seguent_node = arestes[seguent_aresta].n2;
+		} else {
+			seguent_node = arestes[seguent_aresta].n1;
+		}
+
+		cami.arvis[cami.naresvisit] = seguent_aresta;
+		arestes[seguent_aresta].estat = 1;
+		// cami.naresvisit++;
+		cami.nodes[++cami.naresvisit] = seguent_node;
+		num_arestes_posibles = arestesdelnode(cami.nodes[cami.naresvisit], num_arestes, arestes, arestes_posibles);
+	}
+
+	free(arestes);
+	return cami;
 }
 
 int main(int argc, char* argv[]) {
@@ -162,7 +200,7 @@ int main(int argc, char* argv[]) {
 	printf("Numero nodes: %u\n", graf.num_nodes);
 	printf("Numero arestes: %u\n", graf.num_arestes);
 
-	unsigned i, arestespos[MAXARNO], npos = 0, seguir = 0, NAR = graf.num_arestes, num_nodes = graf.num_nodes;
+    unsigned i, arestespos[MAXARNO], npos = 0, seguir = 0, NAR = graf.num_arestes, num_nodes = graf.num_nodes;
     Aresta *larestes = graf.arestes;
     
 	EstructuraCami cami;
@@ -176,6 +214,14 @@ int main(int argc, char* argv[]) {
 	
     printf("Node Inici: ");
     scanf("%u", &cami.nodes[0]);
+
+	EstructuraCami cami_maximal = crearCamiMaximal(cami.nodes[0], larestes, NAR);
+	printf("--DEBUG-- Cami maximal:\n");
+	for (i = 0; i < cami_maximal.naresvisit; i++) {
+		printf("%d -(%d)-> ", cami_maximal.nodes[i], cami_maximal.arvis[i]);
+	}
+	printf("%d\n", cami_maximal.nodes[cami_maximal.naresvisit]);
+	return 0;
 
     npos = arestesdelnode(cami.nodes[0], NAR, larestes, arestespos);
     seguir = 1;
